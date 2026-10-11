@@ -35,6 +35,16 @@ Song titles in Japanese, Korean or Chinese are drawn with the Vita's own system 
 
 ## Install
 
+In VitaShell, hold **←** on the D-pad and press **○** to open the QR code scanner, and scan this:
+
+<img src="../assets/qr.png" width="160" alt="QR code for the newest macapad.vpk">
+
+It always gets the newest release (`releases/latest/download/macapad.vpk`): VitaShell downloads it and asks whether to
+install it, so scan it again to update. VitaShell downloads without signing in to GitHub, so the repository has to stay
+public for this to work.
+
+Or, without the camera (a PS TV has none):
+
 1. Download `macapad.vpk` from the [releases](https://github.com/AD-Archer/vita-macapad/releases) page.
 2. Copy it to the Vita: in VitaShell press **SELECT** to start its FTP server and upload it (or `just send <ip>`, see
    [Building](#building)), or plug in over USB.
@@ -138,12 +148,19 @@ Silicon it runs the x86_64 image under emulation). `just` lists the tasks:
 | `just mock` | runs a pretend Macapad on `127.0.0.1:7399` (see [Emulator](#emulator)) |
 | `just send 10.0.0.42` | builds and uploads the VPK to `ux0:data/` over VitaShell's FTP (press **SELECT** in VitaShell first) |
 | `just eboot 10.0.0.42` | once it's installed: builds and replaces only `eboot.bin` over FTP, the quick way to try a change |
-| `just assets` | makes the LiveArea images in `sce_sys/` again from `assets/icon-source.png` |
+| `just assets` | makes the LiveArea images in `sce_sys/` again from `assets/icon-source.png`, and `screenshots/livearea.png` |
 | `just clean` | removes build output |
 
 `sce_sys/` holds what the home screen shows: `icon0.png` (128×128), the LiveArea's `bg.png` (840×500) and
 `startup.png` (280×158), and `template.xml`. The Vita only shows 8-bit indexed PNGs, which is what
 `scripts/make-assets.py` writes.
+
+<img src="../screenshots/livearea.png" width="420" alt="Macapad's LiveArea: the yellow face as the start button in a dark pad of keys, with the name to its right.">
+
+The LiveArea is drawn as a pad of keys. The start button (`startup.png`) always sits in the same place, in the middle
+and a little above center, so the keys are sized for it to cover exactly 3×2 of them, and its picture is cut from the
+same scene with the face on top, so it blends in. The name is in the matching gap to its right. The icons on the keys
+come from `ACCENTS` in the script.
 
 The title id is `MCPD07317`. It's built as an "unsafe" app so it can keep its files in `ux0:data/macapad/`.
 
@@ -156,8 +173,10 @@ Every push to `main` is also released as the next version, which the workflow ta
 The Vita keeps an app's version as two numbers (`APP_VER` is `XX.YY`), so the tags are two numbers as well, and after
 `v1.99` comes `v2.0`. Put `[major]` in a commit message to go to the next major version sooner.
 
-Each release carries `macapad.vpk` and `eboot.bin`, and the newest is GitHub's "latest", so
-`releases/latest/download/macapad.vpk` always gets the newest VPK.
+Each release carries `macapad.vpk`, `eboot.bin` and `macapad-qr.png`, and the newest is GitHub's "latest", so
+`releases/latest/download/macapad.vpk` always gets the newest VPK. The release notes show the QR code with how to scan
+it in VitaShell. The same image is kept at `assets/qr.png` for the README: the release job makes it again and commits
+it if it ever changes (say, after renaming the repo).
 
 ## Code
 

@@ -14,10 +14,20 @@ Shortcuts. Make up to 12 pages of 15 keys, right on the Vita.
 
 You'll need [Macapad](https://ad-archer.github.io/Macapad/) running on your Mac, on the same Wi-Fi as the Vita.
 
-## Install
+## Install with VitaShell
 
-Grab `macapad.vpk` from the [newest release](https://github.com/AD-Archer/vita-macapad/releases/latest), copy it to the
-Vita (VitaShell's FTP or USB) and install it from VitaShell. Needs a Vita (or PS TV) running HENkaku/Ensō.
+In VitaShell, hold **←** on the D-pad and press **○** to open the QR code scanner, then scan this. It always installs
+the newest release.
+
+<img src="assets/qr.png" width="160" alt="QR code for the newest macapad.vpk">
+
+Or grab `macapad.vpk` from the [newest release](https://github.com/AD-Archer/vita-macapad/releases/latest), copy it to
+the Vita (VitaShell's FTP or USB) and install it from VitaShell. Needs a Vita running HENkaku/Ensō (a PS TV has no
+camera, so use the second way there).
+
+<p align="center">
+  <img src="screenshots/livearea.png" width="560" alt="Macapad's LiveArea: the yellow face as the start button, in the middle of a dark pad of keys with media, search, web, keyboard and Shortcut icons, and the name &quot;Macapad, a macro pad for your Mac&quot; to its right.">
+</p>
 
 ## Docs
 

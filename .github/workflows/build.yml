@@ -2,7 +2,8 @@
 # tagged by this workflow, so nobody has to make tags. The Vita keeps an app's version as two
 # numbers, XX.YY, so the release tags are two numbers too: after v1.99 comes v2.0. Put [major] in
 # a commit message to go to the next major version sooner.
-# The newest release is GitHub's "latest", so this URL always gets the newest VPK:
+# The newest release is GitHub's "latest", so this URL (and its QR code, which VitaShell can scan
+# and install from) always gets the newest VPK:
 #   https://github.com/<owner>/<repo>/releases/latest/download/macapad.vpk
 name: Build
 
@@ -78,20 +79,47 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       TAG: v${{ needs.version.outputs.version }}
+      VPK_URL: https://github.com/${{ github.repository }}/releases/latest/download/macapad.vpk
     steps:
+      # checkout first: it empties the directory, which would take the downloaded build with it
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: macapad
+
+      - name: Make the QR code
+        run: |
+          sudo apt-get install -y -qq qrencode >/dev/null
+          qrencode -s 8 -m 2 -o assets/qr.png "$VPK_URL"
+          cp assets/qr.png macapad-qr.png
+
+      # The README and docs show assets/qr.png, so keep the committed copy in step with the URL
+      # (it only changes if the repo is renamed or moved). Pushes made with github.token don't
+      # start another run.
+      - name: Commit the QR code if it changed
+        run: |
+          if git diff --quiet -- assets/qr.png; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add assets/qr.png
+          git commit -m "Update the VitaShell QR code [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
 
       - name: Publish
         env:
           COMMITS: ${{ toJSON(github.event.commits.*.message) }}
         run: |
           {
-            echo "## Install"
+            echo "## Install with VitaShell"
             echo
-            echo "1. Copy \`macapad.vpk\` to your Vita (VitaShell's FTP or USB, say to \`ux0:data/\`)."
-            echo "2. In VitaShell, open it and choose Install."
+            echo "In VitaShell, hold **←** on the D-pad and press **○** to open the QR code scanner, then scan this."
+            echo "It downloads the newest \`macapad.vpk\` and offers to install it."
+            echo
+            echo "![QR code](https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/macapad-qr.png)"
+            echo
+            echo "Or copy \`macapad.vpk\` to your Vita (VitaShell's FTP or USB, say to \`ux0:data/\`), open it in VitaShell and choose Install."
             echo
             echo "Already installed? Installing the new VPK over it keeps your pages and pairing (they're in \`ux0:data/macapad/\`)."
             echo "\`eboot.bin\` is the app alone, for copying to \`ux0:app/MCPD07317/\` over FTP."
@@ -103,5 +131,5 @@ jobs:
               echo "$changes"
             fi
           } > notes.md
-          gh release create "$TAG" macapad.vpk eboot.bin \
+          gh release create "$TAG" macapad.vpk eboot.bin macapad-qr.png \
             --target "$GITHUB_SHA" --title "Macapad $TAG" --notes-file notes.md --latest
