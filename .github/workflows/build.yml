@@ -1,0 +1,107 @@
+# Builds macapad.vpk. Every push to main also releases it as the next version (v1.0, v1.1, ...),
+# tagged by this workflow, so nobody has to make tags. The Vita keeps an app's version as two
+# numbers, XX.YY, so the release tags are two numbers too: after v1.99 comes v2.0. Put [major] in
+# a commit message to go to the next major version sooner.
+# The newest release is GitHub's "latest", so this URL always gets the newest VPK:
+#   https://github.com/<owner>/<repo>/releases/latest/download/macapad.vpk
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# One run at a time per branch, so two quick pushes can't pick the same version.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+      app_ver: ${{ steps.next.outputs.app_ver }}
+    steps:
+      - id: next
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          MESSAGES: ${{ join(github.event.commits.*.message, ' ') }}
+        run: |
+          last=$(gh api "repos/$GH_REPO/tags" --paginate -q '.[].name' | grep -E '^v[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+          if [ -z "$last" ]; then
+            major=1; minor=0
+          else
+            IFS=. read -r major minor <<< "${last#v}"
+            case "$MESSAGES" in
+              *"[major]"*) major=$((major + 1)); minor=0 ;;
+              *) minor=$((minor + 1)) ;;
+            esac
+            if [ "$minor" -gt 99 ]; then major=$((major + 1)); minor=0; fi
+          fi
+          echo "Last release: ${last:-none}, next: v$major.$minor"
+          echo "version=$major.$minor" >> "$GITHUB_OUTPUT"
+          printf 'app_ver=%02d.%02d\n' "$major" "$minor" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    # pull requests skip the version job but still build
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    container: vitasdk/vitasdk:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build VPK
+        run: |
+          cmake -S . -B build -DVITA_VERSION="${{ needs.version.outputs.app_ver || '00.01' }}"
+          cmake --build build -j"$(nproc)"
+          cp build/macapad.vpk build/eboot.bin .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macapad
+          path: |
+            macapad.vpk
+            eboot.bin
+          if-no-files-found: error
+
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: macapad
+
+      - name: Publish
+        env:
+          COMMITS: ${{ toJSON(github.event.commits.*.message) }}
+        run: |
+          {
+            echo "## Install"
+            echo
+            echo "1. Copy \`macapad.vpk\` to your Vita (VitaShell's FTP or USB, say to \`ux0:data/\`)."
+            echo "2. In VitaShell, open it and choose Install."
+            echo
+            echo "Already installed? Installing the new VPK over it keeps your pages and pairing (they're in \`ux0:data/macapad/\`)."
+            echo "\`eboot.bin\` is the app alone, for copying to \`ux0:app/MCPD07317/\` over FTP."
+            changes=$(printf '%s' "$COMMITS" | jq -r '.[]? | split("\n")[0] | "- " + .')
+            if [ -n "$changes" ]; then
+              echo
+              echo "## Changes"
+              echo
+              echo "$changes"
+            fi
+          } > notes.md
+          gh release create "$TAG" macapad.vpk eboot.bin \
+            --target "$GITHUB_SHA" --title "Macapad $TAG" --notes-file notes.md --latest

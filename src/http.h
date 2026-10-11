@@ -1,0 +1,47 @@
+#pragma once
+#include <stdbool.h>
+#include <stddef.h>
+
+typedef struct {
+	int status;       // HTTP status, or 0 when the Mac couldn't be reached
+	char *body;       // NUL-terminated, owned; free with http_free
+	size_t len;
+} HttpResponse;
+
+// A connection kept open between requests to one Mac (HTTP keep-alive), so a thread that
+// talks to it often skips the TCP handshake each time. One per thread; never shared.
+typedef struct {
+	int fd;
+	char host[64];
+	int port;
+} HttpConn;
+
+void http_conn_init(HttpConn *conn);
+void http_conn_close(HttpConn *conn);
+
+// One request over a fresh connection (Connection: close). token and body may be NULL.
+// Returns false when nothing came back at all.
+bool http_request(const char *method, const char *host, int port, const char *path,
+                  const char *token, const char *body, HttpResponse *out, int timeout_ms);
+// The same over conn, which stays open afterwards when the Mac allows it. If the Mac had
+// dropped the idle connection (or the Vita slept), this notices and tries once more on a new one.
+bool http_request_on(HttpConn *conn, const char *method, const char *host, int port, const char *path,
+                     const char *token, const char *body, HttpResponse *out, int timeout_ms);
+void http_free(HttpResponse *res);
+
+// An IPv4 address in host order as "192.168.1.5" (newlib's inet_ntoa can't be trusted here).
+void ip_text(unsigned int ip, char *out, size_t size);
+
+// "http://192.168.1.5:7317" -> host + port. Port defaults to 7317.
+bool url_split(const char *url, char *host, size_t hostsz, int *port);
+// Why the last connection attempt failed, in a few words (also in ux0:data/macapad/net.log).
+void http_last_failure(char *out, size_t size);
+
+typedef struct {
+	char host[64];
+	int port;
+} ScanHit;
+
+// Knocks on the Macapad port of every address on the Vita's /24 network.
+// progress counts 0..254; set *cancel to stop early. Returns how many answered.
+int net_scan(int port, ScanHit *hits, int max, volatile int *progress, volatile bool *cancel);
