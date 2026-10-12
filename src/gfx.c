@@ -360,6 +360,41 @@ static void arrow(float x0, float x1, float cy, float s, float t, u32 c) {
 	arrow_head(x1, cy, dir, 0, s * 0.42f, c);
 }
 
+// The sun's disc with rays from r1 to r2 (fractions of s).
+static void sun_rays(float cx, float cy, float s, float r0, float r1, float r2, float t, u32 c) {
+	disc(cx, cy, s * r0, c);
+	for (int i = 0; i < 8; i++) {
+		float a = i * (float)M_PI / 4, ca = cosf(a), sa = sinf(a);
+		line(cx + ca * s * r1, cy + sa * s * r1, cx + ca * s * r2, cy + sa * s * r2, t, c);
+	}
+}
+
+// A magnifier, for zooming.
+static void magnifier(float cx, float cy, float s, float t, u32 c) {
+	ring(cx - s * 0.1f, cy - s * 0.1f, s * 0.36f, t * 0.85f, c);
+	line(cx + s * 0.16f, cy + s * 0.16f, cx + s * 0.46f, cy + s * 0.46f, t * 1.2f, c);
+	rect(cx - s * 0.24f, cy - s * 0.1f - t * 0.35f, s * 0.28f, t * 0.7f, c);
+}
+
+// A mouse: its outline and the line between the buttons. side -1 / 1 fills the left / right button.
+static void mouse(float cx, float cy, float s, float t, int side, u32 c) {
+	float w = s * 0.62f, h = s * 0.96f, r = w / 2, x = cx - w / 2, y = cy - h / 2, split = y + h * 0.42f;
+	stroke_rrect(x, y, w, h, r, t * 0.75f, c);
+	rect(x, split - t * 0.35f, w, t * 0.7f, c);
+	rect(cx - t * 0.35f, y, t * 0.7f, split - y, c);
+	if (side < 0) stroke_arc(x + r, y + r, r, r, M_PI, 1.5f * M_PI, r, c);
+	if (side > 0) stroke_arc(x + r, y + r, r, r, 1.5f * M_PI, 2 * M_PI, r, c);
+	if (side) rect(side < 0 ? x : cx, y + r - 0.5f, r, split - (y + r) + 0.5f, c);
+}
+
+// A screen with the part a window fills: fx, fy, fw, fh are fractions of it.
+static void screen_part(float cx, float cy, float s, float t, float fx, float fy, float fw, float fh, u32 c) {
+	float w = s * 1.1f, h = s * 0.8f, x = cx - w / 2, y = cy - h / 2, gap = t * 0.75f + s * 0.06f;
+	stroke_rrect(x, y, w, h, s * 0.1f, t * 0.7f, c);
+	float iw = w - 2 * gap, ih = h - 2 * gap;
+	rrect(x + gap + iw * fx, y + gap + ih * fy, iw * fw, ih * fh, s * 0.05f, c);
+}
+
 // A window: a rounded rect with a title bar, drawn solid in c, with a bg border so it reads on a stack.
 static void window(float x, float y, float w, float h, float s, u32 c, u32 bg, bool border) {
 	float b = s * 0.06f;
@@ -644,6 +679,122 @@ void glyph(Glyph g, float cx, float cy, float s, u32 c, u32 bg) {
 		rect(cx - s * 0.36f, cy - s * 0.04f, s * 0.72f, s * 0.52f, c);
 		rect(cx - s * 0.1f, cy + s * 0.14f, s * 0.2f, s * 0.34f, bg);
 		break;
+
+	// ---- the controller, typing, the Mac's switches ----
+	case GLYPH_GAMEPAD: {
+		rrect(cx - s * 0.62f, cy - s * 0.3f, s * 1.24f, s * 0.56f, s * 0.26f, c);
+		disc(cx - s * 0.4f, cy + s * 0.2f, s * 0.2f, c);  // the grips
+		disc(cx + s * 0.4f, cy + s * 0.2f, s * 0.2f, c);
+		float dx = cx - s * 0.36f, dy = cy - s * 0.04f, arm = s * 0.12f, w = s * 0.075f;
+		rect(dx - arm, dy - w / 2, 2 * arm, w, bg);
+		rect(dx - w / 2, dy - arm, w, 2 * arm, bg);
+		disc(cx + s * 0.28f, cy - s * 0.08f, s * 0.055f, bg);
+		disc(cx + s * 0.42f, cy + s * 0.02f, s * 0.055f, bg);
+		break;
+	}
+	case GLYPH_MOUSE:
+		mouse(cx, cy, s, t, 0, c);
+		break;
+	case GLYPH_CLICK_LEFT:
+	case GLYPH_CLICK_RIGHT:
+		mouse(cx, cy, s, t, g == GLYPH_CLICK_LEFT ? -1 : 1, c);
+		break;
+	case GLYPH_COFFEE:
+		rrect(cx - s * 0.42f, cy - s * 0.12f, s * 0.64f, s * 0.54f, s * 0.14f, c);
+		ring(cx + s * 0.24f, cy + s * 0.1f, s * 0.17f, t * 0.75f, c);
+		rrect(cx - s * 0.5f, cy + s * 0.44f, s * 0.86f, t * 0.6f, t * 0.3f, c);
+		for (int i = 0; i < 2; i++) {
+			float x = cx - s * 0.22f + i * s * 0.22f;
+			line(x, cy - s * 0.48f, x - s * 0.04f, cy - s * 0.34f, t * 0.6f, c);
+			line(x - s * 0.04f, cy - s * 0.34f, x, cy - s * 0.2f, t * 0.6f, c);
+		}
+		break;
+	case GLYPH_ARROW_UP:
+	case GLYPH_ARROW_DOWN: {
+		float m = g == GLYPH_ARROW_UP ? -1 : 1;
+		line(cx, cy - m * s * 0.45f, cx, cy + m * s * 0.2f, t, c);
+		arrow_head(cx, cy + m * s * 0.48f, 0, m, s * 0.42f, c);
+		break;
+	}
+
+	// ---- accessibility and more system actions ----
+	case GLYPH_PERSON:
+		disc(cx, cy - s * 0.36f, s * 0.12f, c);
+		rrect(cx - s * 0.44f, cy - s * 0.18f, s * 0.88f, t * 0.9f, t * 0.45f, c);
+		rect(cx - t * 0.6f, cy - s * 0.18f, t * 1.2f, s * 0.34f, c);
+		line(cx, cy + s * 0.12f, cx - s * 0.2f, cy + s * 0.5f, t * 0.95f, c);
+		line(cx, cy + s * 0.12f, cx + s * 0.2f, cy + s * 0.5f, t * 0.95f, c);
+		break;
+	case GLYPH_MIC:
+		rrect(cx - s * 0.16f, cy - s * 0.5f, s * 0.32f, s * 0.58f, s * 0.16f, c);
+		stroke_arc(cx, cy - s * 0.1f, s * 0.3f, s * 0.3f, 0, M_PI, t * 0.75f, c);
+		rect(cx - t * 0.375f, cy + s * 0.2f, t * 0.75f, s * 0.2f, c);
+		rrect(cx - s * 0.2f, cy + s * 0.4f, s * 0.4f, t * 0.75f, t * 0.35f, c);
+		break;
+	case GLYPH_SUN:
+		sun_rays(cx, cy, s, 0.22f, 0.34f, 0.5f, s * 0.08f, c);
+		break;
+	case GLYPH_SUN_LOW:
+		sun_rays(cx, cy, s, 0.2f, 0.34f, 0.39f, s * 0.09f, c);
+		break;
+	case GLYPH_MOON:
+		disc(cx, cy, s * 0.44f, c);
+		disc(cx + s * 0.22f, cy - s * 0.16f, s * 0.36f, bg);
+		break;
+	case GLYPH_ZOOM_IN:
+		magnifier(cx, cy, s, t, c);
+		rect(cx - s * 0.1f - t * 0.35f, cy - s * 0.24f, t * 0.7f, s * 0.28f, c);
+		break;
+	case GLYPH_ZOOM_OUT:
+		magnifier(cx, cy, s, t, c);
+		break;
+	case GLYPH_INVERT:
+		ring(cx, cy, s / 2, t, c);
+		stroke_arc(cx, cy, s / 2, s / 2, -M_PI / 2, M_PI / 2, s / 2, c);
+		break;
+	case GLYPH_WIFI: {
+		float by = cy + s * 0.36f;
+		disc(cx, by, s * 0.09f, c);
+		for (int i = 1; i <= 3; i++) stroke_arc(cx, by, s * (0.06f + 0.24f * i), s * (0.06f + 0.24f * i), -0.75f * M_PI, -0.25f * M_PI, t * 0.85f, c);
+		break;
+	}
+	case GLYPH_BLUETOOTH: {
+		// the rune: a stem, with arrowheads crossing it to the right
+		float top = cy - s * 0.48f, bot = cy + s * 0.48f, x = cx + s * 0.26f, w = t * 0.8f;
+		line(cx - s * 0.04f, top, cx - s * 0.04f, bot, w, c);
+		line(cx - s * 0.04f, top, x, cy - s * 0.22f, w, c);
+		line(x, cy - s * 0.22f, cx - s * 0.3f, cy + s * 0.24f, w, c);
+		line(cx - s * 0.04f, bot, x, cy + s * 0.22f, w, c);
+		line(x, cy + s * 0.22f, cx - s * 0.3f, cy - s * 0.24f, w, c);
+		disc(x, cy - s * 0.22f, w / 2, c);
+		disc(x, cy + s * 0.22f, w / 2, c);
+		break;
+	}
+	case GLYPH_EJECT:
+		tri(cx, cy - s * 0.44f, cx - s * 0.44f, cy + s * 0.08f, cx + s * 0.44f, cy + s * 0.08f, c);
+		rrect(cx - s * 0.44f, cy + s * 0.24f, s * 0.88f, t * 1.1f, t * 0.3f, c);
+		break;
+	case GLYPH_EYE:
+		ellipse(cx - s * 0.56f, cy - s * 0.32f, s * 1.12f, s * 0.64f, c);
+		ellipse(cx - s * 0.56f + t, cy - s * 0.32f + t, s * 1.12f - 2 * t, s * 0.64f - 2 * t, bg);
+		disc(cx, cy, s * 0.19f, c);
+		break;
+	case GLYPH_STAGE:  // Stage Manager: the window in front, the others in a strip at the side
+		stroke_rrect(cx - s * 0.2f, cy - s * 0.36f, s * 0.72f, s * 0.72f, s * 0.08f, t * 0.75f, c);
+		for (int i = -1; i <= 1; i++) rrect(cx - s * 0.56f, cy + i * s * 0.26f - s * 0.09f, s * 0.24f, s * 0.18f, s * 0.04f, c);
+		break;
+
+	// ---- where a window goes ----
+	case GLYPH_WIN_LEFT: screen_part(cx, cy, s, t, 0, 0, 0.5f, 1, c); break;
+	case GLYPH_WIN_RIGHT: screen_part(cx, cy, s, t, 0.5f, 0, 0.5f, 1, c); break;
+	case GLYPH_WIN_TOP: screen_part(cx, cy, s, t, 0, 0, 1, 0.5f, c); break;
+	case GLYPH_WIN_BOTTOM: screen_part(cx, cy, s, t, 0, 0.5f, 1, 0.5f, c); break;
+	case GLYPH_WIN_TL: screen_part(cx, cy, s, t, 0, 0, 0.5f, 0.5f, c); break;
+	case GLYPH_WIN_TR: screen_part(cx, cy, s, t, 0.5f, 0, 0.5f, 0.5f, c); break;
+	case GLYPH_WIN_BL: screen_part(cx, cy, s, t, 0, 0.5f, 0.5f, 0.5f, c); break;
+	case GLYPH_WIN_BR: screen_part(cx, cy, s, t, 0.5f, 0.5f, 0.5f, 0.5f, c); break;
+	case GLYPH_WIN_CENTER: screen_part(cx, cy, s, t, 0.22f, 0.18f, 0.56f, 0.64f, c); break;
+	case GLYPH_WIN_FILL: screen_part(cx, cy, s, t, 0, 0, 1, 1, c); break;
 	}
 }
 

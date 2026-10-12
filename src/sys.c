@@ -1,6 +1,7 @@
 #include "sys.h"
 
 #include <arpa/inet.h>
+#include <psp2/appmgr.h>
 #include <psp2/apputil.h>
 #include <psp2/common_dialog.h>
 #include <psp2/ime_dialog.h>
@@ -13,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 u64 now_ms(void) { return sceKernelGetProcessTimeWide() / 1000; }
 
@@ -149,12 +151,40 @@ void device_name(char *out, size_t size) {
 
 bool enter_is_circle(void) { return s_enterCircle; }
 
+// The system says when the app comes back from the Vita sleeping; a frame that took far too long,
+// or the wall clock jumping, also gives it away (the process clock may stand still meanwhile).
+bool sys_was_away(void) {
+	static u64 lastMs;
+	static time_t lastWall;
+	bool away = false;
+	SceAppMgrSystemEvent ev;
+	// (a few at most: an emulator that doesn't have it may say yes forever)
+	for (int i = 0; i < 4; i++) {
+		memset(&ev, 0, sizeof ev);
+		if (sceAppMgrReceiveSystemEvent(&ev) < 0) break;
+		if (ev.systemEvent == SCE_APPMGR_SYSTEMEVENT_ON_RESUME) away = true;
+	}
+	u64 ms = now_ms();
+	time_t wall = time(NULL);
+	if (lastMs && (ms - lastMs > 700 || wall - lastWall > 2)) away = true;
+	lastMs = ms;
+	lastWall = wall;
+	return away;
+}
+
+// A tick is what a button press does to the power timers: DEFAULT resets all of them (dimming,
+// the screen going off, and suspending). The three on their own are the same timers named one by
+// one; they're ticked too in case a firmware treats DEFAULT differently. The shortest timer is
+// the dimming's, several seconds, so once a second is plenty.
 void power_keep_awake(void) {
 	static u64 last;
 	u64 now = now_ms();
 	if (last && now - last < 1000) return;
 	last = now;
 	sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DEFAULT);
+	sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND);
+	sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF);
+	sceKernelPowerTick(SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING);
 }
 
 // ---- on-screen keyboard ---------------------------------------------------------

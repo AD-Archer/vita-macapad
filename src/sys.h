@@ -53,7 +53,10 @@ void device_name(char *out, size_t size);
 // True when the confirm button is ○ (Japanese consoles), so ✕ goes back.
 bool enter_is_circle(void);
 
-// Keeps the screen on while the app runs (call every frame; cheap).
+// True once after the app was away: suspended for the PS button, or the Vita slept. Call every frame.
+bool sys_was_away(void);
+
+// Keeps the screen on and the Vita from going to sleep while the app runs (call every frame; cheap).
 void power_keep_awake(void);
 
 // ---- on-screen keyboard ---------------------------------------------------------

@@ -31,6 +31,8 @@ target_compile_options(jansson_vendored PRIVATE -w)
 add_executable(${PROJECT_NAME}
   src/main.c
   src/macapad.c
+  src/controller.c
+  src/input.c
   src/http.c
   src/gfx.c
   src/qrscan.c

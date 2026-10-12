@@ -332,6 +332,21 @@ static void snapshot_save(void) {
 	s_snapshotAt = now_ms();
 }
 
+// A switch just flipped on the Vita shows its new state at once, and keeps showing it for a few
+// seconds, so an answer the Mac sent before it ran the step doesn't flip it back. Under the lock.
+#define SWITCH_PENDING_MS 4000
+static bool s_switchOn[2];
+static u64 s_switchUntil[2];
+
+static void switches_pending(Status *st) {
+	u64 now = now_ms();
+	if (now < s_switchUntil[SWITCH_KEEP_AWAKE]) {
+		st->macAwake = s_switchOn[SWITCH_KEEP_AWAKE];
+		if (!st->macAwake) st->macAwakeUntil = 0;
+	}
+	if (now < s_switchUntil[SWITCH_JIGGLER]) st->jiggler = s_switchOn[SWITCH_JIGGLER];
+}
+
 static void apply_status(json_t *root) {
 	Status st;
 	lock(&s_lock);
@@ -370,7 +385,14 @@ static void apply_status(json_t *root) {
 	st.off = json_is_object(off);
 	copy(st.offMessage, sizeof st.offMessage, st.off ? jstr(off, "message") : "");
 
+	json_t *awake = json_object_get(root, "keepAwake"), *jiggler = json_object_get(root, "jiggler");
+	st.hasSwitches = json_is_object(awake) || json_is_object(jiggler);
+	st.macAwake = json_is_true(json_object_get(awake, "on"));
+	st.macAwakeUntil = st.macAwake ? parse_iso(jstr(awake, "until")) : 0;
+	st.jiggler = json_is_true(json_object_get(jiggler, "on"));
+
 	lock(&s_lock);
+	switches_pending(&st);
 	s_status = st;
 	unlock(&s_lock);
 
@@ -507,6 +529,20 @@ void press_key(const PadKey *key) {
 }
 
 void press_action(const char *actionId) { enqueue(step("action", "id", actionId)); }
+
+void type_text(const char *text) { enqueue(step("typeText", "text", text)); }
+
+void press_combo(const char *keys) { enqueue(step("keystroke", "keys", keys)); }
+
+void mac_switch(MacSwitch which, bool on) {
+	lock(&s_lock);
+	s_switchOn[which] = on;
+	s_switchUntil[which] = now_ms() + SWITCH_PENDING_MS;
+	switches_pending(&s_status);
+	unlock(&s_lock);
+	// on or off outright, not "toggle", so a tap twice in a row can't undo itself
+	enqueue(json_pack("{s:s,s:b}", "type", which == SWITCH_KEEP_AWAKE ? "keepAwake" : "jiggler", "on", on));
+}
 
 // Takes every queued step; NULL when there are none.
 static json_t *take_steps(void) {

@@ -4,6 +4,9 @@
 - [Requirements](#requirements)
 - [Install](#install)
 - [Using it](#using-it)
+- [Using it as a controller](#using-it-as-a-controller)
+- [Typing on your Mac](#typing-on-your-mac)
+- [Keeping things awake](#keeping-things-awake)
 - [Buttons](#buttons)
 - [Files on the memory card](#files-on-the-memory-card)
 - [Building](#building)
@@ -16,8 +19,8 @@
 - **The dashboard** (the first page): the time (from the Mac's clock), the weather where the Mac is, what's playing on
   the Mac (any app) with artwork, progress and previous / play / next buttons, and the Mac's CPU, memory, battery and
   disk.
-- **Pages of keys**, 5×3 each, up to 12 pages. A key can run a Mac action, open an app, open a website,
-  press a keyboard shortcut or run a Shortcut. App keys show the app's icon; website keys show the site's icon (the
+- **Pages of keys**, 5×3 each, up to 12 pages. A key can run a Mac action (window halves and quarters, Siri,
+  brightness, accessibility and more), open an app, open a website, press a keyboard shortcut or run a Shortcut. App keys show the app's icon; website keys show the site's icon (the
   icons the site's page declares, else its favicon). Each page's bar shows the time and the song too.
 
 The song is polled every 1.5 seconds and is always current. Everything else is allowed to lag a little: the clock
@@ -29,7 +32,8 @@ Song titles in Japanese, Korean or Chinese are drawn with the Vita's own system 
 ## Requirements
 
 - [Macapad](https://ad-archer.github.io/Macapad/) 0.4 or later on your Mac (it needs `GET /api/status`). The Vita's
-  "Find your Mac" screen shows a QR code for that page too.
+  "Find your Mac" screen shows a QR code for that page too. The controller, keys that repeat while held, Keep Mac
+  awake and the mouse jiggler need Macapad 1.0.
 - A PS Vita or PS TV that runs homebrew (HENkaku / Ensō) with VitaShell.
 - The Vita and the Mac on the same Wi-Fi. A Vita can't join a tailnet.
 
@@ -79,13 +83,65 @@ Installing a newer VPK over it keeps your pages and pairing; they live in `ux0:d
    (or **□**) asks the Mac again right away; **Refresh from your Mac** in the menu does that for all three and fetches
    the pad's icons again too. Icons are also cached on the memory card and fetched again when a week old.
 
-The menu (the ☰ button in a page's bar, or **START**) jumps to a page, adds, renames, moves or removes pages, switches
-the clock to 24 hours, keeps the screen on (the default, so it works as a desk display), forgets the Mac, refreshes
-the lists and icons, and quits.
+The menu (the ☰ button in a page's bar, or **START**) jumps to a page, adds, renames, moves or removes pages, opens
+the controller and the typing screen, switches Keep Mac awake and the mouse jiggler, switches the clock to 24 hours,
+keeps this Vita awake (the default, so it works as a desk display), forgets the Mac, refreshes the lists and icons,
+and quits.
 
 Taps go to the Mac in order. Any made while one is still on its way are sent together in the next request, so a quick
 run of taps doesn't wait a round trip each. If the Mac's address changes, the Vita looks for the same Mac on the
 network again after a few failed polls.
+
+## Using it as a controller
+
+**Use as a controller** in the menu turns the Vita into a controller for the Mac: every button and both sticks press
+keys or move the mouse, and the screen is a trackpad. Drag one finger to move the pointer (it speeds up when you move
+quickly), tap to click, drag two fingers to scroll, tap with two to right-click. The screen shows what each button
+does, lights it up while it's held, and says whether the Mac is getting it ("Connected"), or why not.
+
+Hold **START** and **SELECT** together for a moment to leave (every other button goes to the Mac), or tap **‹ Done**.
+**Set up** picks one of three presets:
+
+| | Mouse & keys | Retro games | PC games |
+|---|---|---|---|
+| Left stick | moves the pointer | arrow keys | W A S D |
+| Right stick | scrolls | nothing | mouse look (a quicker pointer) |
+| D-pad | arrow keys | arrow keys | 1 2 3 4 (↑ → ↓ ←) |
+| ✕ | click | Z | Space (jump) |
+| ○ | right click | X | Shift (sprint) |
+| □ | Space | A | E (use) |
+| △ | Cmd+Tab (switch apps) | S | R (reload) |
+| L / R | Cmd+[ / Cmd+] (back / forward) | Q / W | right click (aim) / click (shoot) |
+| START / SELECT | Return / Esc | Return / Right Shift | Esc (menu) / Tab (map) |
+
+"Retro games" is RetroArch's own keyboard setup, by where the buttons sit: the right face button is its A (X), the
+bottom one B (Z), the top one X (S) and the left one Y (A). In "Mouse & keys", ✕ and ○ swap on consoles set up with
+○ as confirm, so the confirm button clicks.
+
+**Change a button** sets any button to a key, a click, keys held together (like Cmd+Tab), or nothing, and each stick to
+the pointer, scrolling, arrow keys, W A S D, mouse look or nothing. Changes are kept per preset; **Back to preset**
+undoes them. **Back touchpad scrolls** makes a finger on the back of the Vita scroll (off at first, so holding the
+Vita doesn't scroll). The Vita stays awake while the controller is open.
+
+The buttons go to the Mac as they're held (Macapad's live input, over UDP on its port), so a held key repeats and two
+consoles can play at once. Nothing stays stuck: letting go, leaving the screen, the PS button, the Vita sleeping or the
+Wi-Fi dropping all let go of everything on the Mac. The menu also has **Change the controller's buttons**, for setting
+it up first (or without a touchscreen).
+
+## Typing on your Mac
+
+**Type on your Mac** in the menu: **Type something…** opens the Vita's keyboard, and what you type is typed on the Mac
+where the cursor is. Under it are Esc, Tab, Space, Delete, Return and the arrows, which repeat while held, like a real
+keyboard, and Command, Shift, Option and Control, which go with the next key (Command then Tab is Cmd+Tab). With an
+older Macapad each tap presses the key once. **△** opens the keyboard too.
+
+## Keeping things awake
+
+- **Keep this Vita awake** (on by default): while Macapad is open the screen doesn't dim or turn off, and the Vita
+  doesn't go to sleep. It tells the system once a second that someone's using it (`sceKernelPowerTick`).
+- **Keep Mac awake** stops the Mac's screen from sleeping, and **Mouse jiggler** nudges its pointer when it's been idle,
+  so it (and Slack, Teams…) never goes idle. Both show whether they're on right now, even when switched on the Mac or
+  from another device. They're also Mac actions you can put on a key.
 
 ## Buttons
 
@@ -104,6 +160,9 @@ Everything works by touch, and everything works with the buttons too (for a PS T
 | START | menu | menu | close the menu |
 | Sticks | | | scroll |
 
+On the controller screen every button goes to the Mac (see [above](#using-it-as-a-controller)); hold START and
+SELECT together to leave.
+
 ## Files on the memory card
 
 Everything lives in `ux0:data/macapad/`:
@@ -112,6 +171,7 @@ Everything lives in `ux0:data/macapad/`:
 |---|---|
 | `config.json` | the Mac's address, this Vita's device token, the clock and screen settings |
 | `pads.json` | your pages and keys |
+| `controller.json` | the controller's preset, the buttons you changed in each, and whether the back touchpad scrolls |
 | `status.json` | the last clock offset, weather and stats, for the dashboard before the Mac answers (per Mac) |
 | `catalog-actions.json`, `catalog-apps.json`, `catalog-shortcuts.json` | the pickers' lists, with when they were fetched (per Mac) |
 | `icons/<bundleId>.png` | cached app icons |
@@ -182,12 +242,14 @@ it if it ever changes (say, after renaming the repo).
 
 | File | What |
 |---|---|
-| `src/main.c` | screens: find, scan code, pair, the dashboard and pages of keys (with swipes and the focus ring), key editor, grouped lists, menu |
+| `src/main.c` | screens: find, scan code, pair, the dashboard and pages of keys (with swipes and the focus ring), key editor, grouped lists, menu, the controller and typing screens |
+| `src/controller.c` | the controller's presets and changed buttons, and turning buttons, sticks and touch into keys, clicks and movement |
+| `src/input.c` | live input: the input session, and the state of every key held sent over UDP (with acks, renewing the session, and letting go) |
 | `src/macapad.c` | config and pads on the memory card, status / press / icon / catalog threads (presses batched, connections kept open), the status snapshot, scanning, pairing, the catalog cache |
 | `src/http.c` | a small HTTP/1.1 client on the Vita's sockets, with keep-alive and Content-Length framing, plus the subnet scan |
 | `src/gfx.c` | vita2d underneath: shapes from batched triangles, text in Inter (and the system fonts for CJK), the icon set, pictures |
 | `src/qrscan.c` | the back camera at 640×480 straight into a texture, and a thread decoding QR codes with quirc, for pairing |
-| `src/sys.c` | threads, locks and events on the Vita's kernel, the network, the on-screen keyboard, keeping the screen on |
+| `src/sys.c` | threads, locks and events on the Vita's kernel, the network, the on-screen keyboard, keeping the Vita awake, noticing it was away |
 | `vendor/jansson/` | [jansson](https://github.com/akheron/jansson) 2.14, built here because VitaSDK's package is compiled as PIC, which `vita-elf-create` refuses (see `VENDORED.md`) |
 
 The worker threads run on the Vita's second and third cores, so parsing answers and decoding images never cost the
@@ -210,5 +272,6 @@ To try the dashboard and keys without pairing your Mac, run `just mock` and put 
 ```
 
 The pretend Mac plays a song (one with a Japanese title, to try the CJK fonts), reports weather and stats, serves app
-and website icons, and prints every key press. Without Sony's firmware installed in Vita3K, Japanese text shows as
+and website icons, and prints every key press. It also gives out input sessions and prints the controller's UDP
+packets as what's held changes; `--old` acts like a Macapad from before 1.0 and `--paused` like one that's paused. Without Sony's firmware installed in Vita3K, Japanese text shows as
 boxes there; a real Vita has the fonts. The camera and the on-screen keyboard need real hardware.

@@ -90,6 +90,11 @@ typedef struct {
 
 	bool off;
 	char offMessage[160];
+
+	// The Mac's own switches (Macapad 1.0); hasSwitches is false on an older Macapad
+	bool hasSwitches;
+	bool macAwake, jiggler;
+	s64 macAwakeUntil;   // ms since 1970 when keeping awake stops; 0 = until it's turned off
 } Status;
 
 // Copies the latest status under the lock.
@@ -104,6 +109,15 @@ bool artwork_take(u8 **pixels, int *w, int *h);
 void press_key(const PadKey *key);
 // Steps for the buttons: a built-in action id like "play-pause".
 void press_action(const char *actionId);
+
+// Types text on the Mac, as if typed on its keyboard.
+void type_text(const char *text);
+// Presses one key combo, like "cmd+left".
+void press_combo(const char *keys);
+
+typedef enum { SWITCH_KEEP_AWAKE, SWITCH_JIGGLER } MacSwitch;
+// Turns "Keep Mac awake" or the mouse jiggler on or off. The status shows it at once.
+void mac_switch(MacSwitch which, bool on);
 
 // The last press that went wrong (or the last notice); empty when there is none.
 // Each message stays for a few seconds.

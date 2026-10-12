@@ -29,6 +29,7 @@
 #define C_TEAL      RGB(0x64, 0xD2, 0xFF)
 #define C_PINK      RGB(0xFF, 0x37, 0x5F)
 #define C_GRAY      RGB(0x8E, 0x8E, 0x93)
+#define C_INDIGO    RGB(0x5E, 0x5C, 0xE6)
 
 void gfx_init(void);
 void gfx_exit(void);
@@ -85,6 +86,14 @@ typedef enum {
 	GLYPH_BOLT, GLYPH_GLOBE, GLYPH_KEYS, GLYPH_SHORTCUT, GLYPH_APP,
 	GLYPH_PLUS, GLYPH_CHECK, GLYPH_CHEVRON_R, GLYPH_CHEVRON_L, GLYPH_CLOCK, GLYPH_LAPTOP, GLYPH_PENCIL, GLYPH_TRASH,
 	GLYPH_MENU, GLYPH_HOME,
+	// the controller, typing, the Mac's switches
+	GLYPH_GAMEPAD, GLYPH_MOUSE, GLYPH_CLICK_LEFT, GLYPH_CLICK_RIGHT, GLYPH_COFFEE, GLYPH_ARROW_UP, GLYPH_ARROW_DOWN,
+	// accessibility and more system actions
+	GLYPH_PERSON, GLYPH_MIC, GLYPH_SUN, GLYPH_SUN_LOW, GLYPH_MOON, GLYPH_ZOOM_IN, GLYPH_ZOOM_OUT, GLYPH_INVERT,
+	GLYPH_WIFI, GLYPH_BLUETOOTH, GLYPH_EJECT, GLYPH_EYE, GLYPH_STAGE,
+	// where a window goes: a screen with the part it fills
+	GLYPH_WIN_LEFT, GLYPH_WIN_RIGHT, GLYPH_WIN_TOP, GLYPH_WIN_BOTTOM,
+	GLYPH_WIN_TL, GLYPH_WIN_TR, GLYPH_WIN_BL, GLYPH_WIN_BR, GLYPH_WIN_CENTER, GLYPH_WIN_FILL,
 } Glyph;
 void glyph(Glyph g, float cx, float cy, float size, u32 color, u32 bg);
 
